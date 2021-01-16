@@ -1,0 +1,22 @@
+{
+  "name": "n8n-scalingo",
+  "version": "0.101.0",
+  "description": "Scalingo app that runs n8n application",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx n8n"
+  },
+  "author": {
+    "name": "Jérémy Buget",
+    "email": "contact@jbuget.fr",
+    "url": "https://jbuget.fr"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "n8n": "^0.101.0"
+  },
+  "engines": {
+    "node": "12",
+    "npm": "6"
+  }
+}
