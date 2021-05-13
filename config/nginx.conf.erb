@@ -42,7 +42,7 @@ http {
 		      # forward the /validate request to Vouch Proxy
 		      proxy_pass <%= ENV["VOUCH_URL"] %>/validate;
 		      # be sure to pass the original host header
-		      proxy_set_header Host $http_host;
+		      #proxy_set_header Host $http_host;
 
 		      # Vouch Proxy only acts on the request headers
 		      proxy_pass_request_body off;
