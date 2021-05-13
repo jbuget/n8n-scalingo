@@ -86,6 +86,8 @@ http {
 			proxy_set_header Host $http_host;
 			proxy_redirect off;
 			proxy_pass http://app_server;
+			proxy_set_header Upgrade $http_upgrade;
+			proxy_set_header Connection "upgrade";
 		}
 	}
 }
