@@ -1,0 +1,97 @@
+daemon off;
+# Heroku dynos have at least 4 cores.
+worker_processes <%= ENV['NGINX_WORKERS'] || 4 %>;
+
+events {
+	use epoll;
+	accept_mutex on;
+	worker_connections <%= ENV['NGINX_WORKER_CONNECTIONS'] || 1024 %>;
+}
+
+http {
+	gzip on;
+	gzip_comp_level 2;
+	gzip_min_length 512;
+
+	server_tokens off;
+
+	log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
+	access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || 'logs/nginx/access.log' %> l2met;
+	error_log <%= ENV['NGINX_ERROR_LOG_PATH'] || 'logs/nginx/error.log' %>;
+
+	include mime.types;
+	default_type application/octet-stream;
+	sendfile on;
+
+	# Must read the body in 5 seconds.
+	client_body_timeout 5;
+
+	upstream app_server {
+		server localhost:5678 fail_timeout=0;
+	}
+
+	server {
+		
+		listen <%= ENV["PORT"] %>;
+		server_name _;
+		keepalive_timeout 5;
+		
+		auth_request /validate;
+
+		location = /validate {
+		      # forward the /validate request to Vouch Proxy
+		      proxy_pass <%= ENV["VOUCH_URL"] %>/validate;
+		      # be sure to pass the original host header
+		      #proxy_set_header Host $http_host;
+
+		      # Vouch Proxy only acts on the request headers
+		      proxy_pass_request_body off;
+		      proxy_set_header Content-Length "";
+
+		      # optionally add X-Vouch-User as returned by Vouch Proxy along with the request
+		      auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+		      proxy_set_header X-Real-IP $remote_addr;
+  		      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  		      proxy_set_header X-Forwarded-Proto $scheme;
+
+
+		      # optionally add X-Vouch-IdP-Claims-* custom claims you are tracking
+		      #    auth_request_set $auth_resp_x_vouch_idp_claims_groups $upstream_http_x_vouch_idp_claims_groups;
+		      #    auth_request_set $auth_resp_x_vouch_idp_claims_given_name $upstream_http_x_vouch_idp_claims_given_name;
+		      # optinally add X-Vouch-IdP-AccessToken or X-Vouch-IdP-IdToken
+		      #    auth_request_set $auth_resp_x_vouch_idp_accesstoken $upstream_http_x_vouch_idp_accesstoken;
+		      #    auth_request_set $auth_resp_x_vouch_idp_idtoken $upstream_http_x_vouch_idp_idtoken;
+
+		      # these return values are used by the @error401 call
+		      auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
+		      auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
+		      auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+	        }
+
+		# if validate returns `401 not authorized` then forward the request to the error401block
+		error_page 401 = @error401;
+
+		location @error401 {
+			# redirect to Vouch Proxy for login
+			return 302 <%= ENV["VOUCH_URL"] %>/login?url=https://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err;
+		}
+
+		proxy_set_header Host $http_host;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "upgrade";
+
+		location / {
+			proxy_redirect off;
+			proxy_pass http://app_server;
+		}
+		location ^~ /rest/push {
+		    proxy_pass http://app_server;
+		    proxy_buffering off;
+		    proxy_cache off;
+		    proxy_set_header Connection '';
+		    proxy_http_version 1.1;
+		    chunked_transfer_encoding off;
+		}
+	}
+}
