@@ -76,6 +76,12 @@ In this repository, we will [release a new version](https://github.com/jbuget/n8
 
 > **Good to know!** The only thing we have to do, is to bump the fixed version of n8n dependency in the package.json (with its lock file). You can even provide a Pull Request to help us!  
 
+ Package upgrade steps:
+ - Make sure you're using the NodeJS major version mentioned in `package.json` (e.g. 18);
+ - Run `npm ci`;
+ - Run `npm install --save-exact n8n@x.y.z` where `x.y.z` is the version of `n8n` you want to upgrade to;
+ - Run `npm version --force x.y.z` (also commit the packages files changes)
+
 Even the database migration scripts are run automatically if necessary at the app startup. 😎
 
 ## License
