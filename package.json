@@ -1,6 +1,6 @@
 {
   "name": "n8n-scalingo",
-  "version": "1.44.1",
+  "version": "1.110.1",
   "description": "Scalingo app that runs n8n application",
   "main": "index.js",
   "scripts": {
@@ -8,12 +8,12 @@
   },
   "author": {
     "name": "Plateforme de l'inclusion",
-    "email": "contact@inclusion.beta.gouv.fr",
-    "url": "https://inclusion.beta.gouv.fr"
+    "email": "contact@jbuget.fr",
+    "url": "https://jbuget.fr"
   },
   "license": "MIT",
   "dependencies": {
-    "n8n": "1.109.1"
+    "n8n": "1.110.1"
   },
   "engines": {
     "node": "22",
